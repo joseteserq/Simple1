@@ -33,6 +33,8 @@
 
 #define ZOMBIE_FLINCH_DELAY		2		// at most one flinch every n secs
 
+#define ZOMBIE_RUN_SPEED_MULT	2.0f	// framerate/speed multiplier while chasing (try 1.5 - 2.5)
+
 class CZombie : public CBaseMonster
 {
 public:
@@ -42,6 +44,7 @@ public:
 	int Classify( void );
 	void HandleAnimEvent( MonsterEvent_t *pEvent );
 	int IgnoreConditions( void );
+	void RunAI( void );
 
 	float m_flNextFlinch;
 
@@ -322,4 +325,26 @@ int CZombie::IgnoreConditions( void )
 	}
 
 	return iIgnore;
+}
+
+//=========================================================
+// RunAI - zombies sprint while chasing an enemy.
+// Movement distance and animation speed both scale with
+// pev->framerate, so this makes the legs and the zombie
+// move faster together.
+//=========================================================
+void CZombie::RunAI( void )
+{
+	CBaseMonster::RunAI();
+
+	if( m_hEnemy != 0 && m_MonsterState == MONSTERSTATE_COMBAT &&
+		( m_Activity == ACT_WALK || m_Activity == ACT_RUN ) )
+	{
+		pev->framerate = ZOMBIE_RUN_SPEED_MULT;
+	}
+	else if( m_Activity != ACT_WALK && m_Activity != ACT_RUN )
+	{
+		// attacks, flinches and idles always play at normal speed
+		pev->framerate = 1.0f;
+	}
 }
