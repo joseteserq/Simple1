@@ -29,27 +29,21 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Install Android SDK components
+      - name: Install Android SDK
         shell: bash
         env:
           ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
         run: |
-          set -euxo pipefail
           mkdir -p "$ANDROID_SDK_ROOT"
-
-          if [ ! -x "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ] && [ ! -x "$ANDROID_SDK_ROOT/cmdline-tools/16.0/bin/sdkmanager" ]; then
-            echo "Installing command-line tools..."
-            cd "$ANDROID_SDK_ROOT"
-            wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
-            rm -rf cmdline-tools
-            mkdir -p cmdline-tools
-            unzip -q cmdline-tools.zip -d cmdline-tools
-            mv cmdline-tools/cmdline-tools "$ANDROID_SDK_ROOT/cmdline-tools/latest"
-          fi
+          cd "$ANDROID_SDK_ROOT"
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q commandlinetools-linux-11076708_latest.zip
+          mkdir -p cmdline-tools/latest
+          mv cmdline-tools/* cmdline-tools/latest/ 2>/dev/null || true
 
           export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH"
           yes | sdkmanager --licenses
-          sdkmanager --install "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;26.1.10909125"
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;26.1.10909125"
 
       - name: Build APK
         working-directory: android
@@ -57,11 +51,10 @@ jobs:
           ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
         run: |
           export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH"
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: hlsdk-android-debug
-          path: android/app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
+          name: hlsdk-debug.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
